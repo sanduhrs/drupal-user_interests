@@ -1,0 +1,117 @@
+<?php
+/* $Id$ */
+
+/**
+ * @file
+ * Shows a user's most used taxonomy terms on the profile page.
+ * 
+ * @author
+ * Stefan Auditor <stefan.auditor@erdfisch.de>
+ */
+
+/**
+ * Implementation of hook_user(); 
+ */
+function user_interests_user($op, &$edit, &$account, $category = NULL) {
+  global $user;
+  
+  switch ($op) {
+    case 'view':
+      
+      $data = $user->interests;
+//      drupal_set_message('<pre>'. print_r($data, 1) .'</pre>');
+      foreach($data as $vid => $interests) {
+        $terms = array();
+        foreach($interests as $interest) {
+          $terms[] = l($interest->name, 'taxonomy/term/'. $interest->tid) .' ('. ($interest->posts ? $interest->posts : 0) .' Posts, '. ($interest->comments ? $interest->comments : 0) .' Comments)';
+        }
+        
+        $vocab = taxonomy_get_vocabulary($vid);
+        $items['user_interests_'. $vid] = array(
+          'title' => t($vocab->name),
+          'value' => theme('user_interest', $terms),
+          'class' => 'terms',
+        ); 
+      }
+      return $items ? array(t('Interests') => $items) : NULL;
+      break;
+    case 'load':
+      $user->interests = user_interests_get_terms($account->uid);
+      break;
+  }
+}
+
+/**
+ * Get the taxonomy terms associated with user's nodes and comments' 
+ */
+function user_interests_get_terms($uid, $type = 'node') {
+  $interests = array();
+  //get node taxonomy
+  $result = db_query("SELECT td.*, COUNT(td.tid) as posts FROM {term_data} td 
+              INNER JOIN {term_node} tn
+              INNER JOIN {node} n
+                WHERE n.uid = %d AND tn.nid = n.nid AND tn.tid = td.tid
+                GROUP BY td.tid
+                ORDER BY posts DESC
+            ", $uid);
+  
+  while ($object = db_fetch_object($result)) {
+    $interests[$object->vid][$object->tid] = $object; 
+  }
+  //get comment taxonomy
+  $result = db_query("SELECT td.*, COUNT(td.tid) as comments FROM {term_data} td 
+              INNER JOIN {term_node} tn
+              INNER JOIN {comments} c
+                WHERE c.uid = %d AND tn.nid = c.nid AND tn.tid = td.tid
+                GROUP BY td.tid
+                ORDER BY comments DESC
+            ", $uid);
+  
+  while ($object = db_fetch_object($result)) {
+    $object->posts = $interests[$object->vid][$object->tid]->posts;
+    $interests[$object->vid][$object->tid] = $object;
+  }
+  
+  return $interests;
+}
+
+/**
+ * Themeable function
+ */
+function theme_user_interest($items = array(), $title = NULL, $type = 'ul', $attributes = NULL) {
+  $output = '<div class="user-interests">';
+  if (isset($title)) {
+    $output .= '<h3>'. $title .'</h3>';
+  }
+
+  if (!empty($items)) {
+    $output .= "<$type" . drupal_attributes($attributes) . '>';
+    foreach ($items as $item) {
+      $attributes = array();
+      $children = array();
+      if (is_array($item)) {
+        foreach ($item as $key => $value) {
+          if ($key == 'data') {
+            $data = $value;
+          }
+          elseif ($key == 'children') {
+            $children = $value;
+          }
+          else {
+            $attributes[$key] = $value;
+          }
+        }
+      }
+      else {
+        $data = $item;
+      }
+      if (count($children) > 0) {
+        $data .= theme_item_list($children, NULL, $type, $attributes); // Render nested list
+      }
+      $output .= '<li' . drupal_attributes($attributes) . '>'. $data .'</li>';
+    }
+    $output .= "</$type>";
+  }
+  $output .= '</div>';
+  return $output;
+}
