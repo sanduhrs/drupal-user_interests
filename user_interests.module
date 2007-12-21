@@ -20,9 +20,9 @@ function user_interests_user($op, &$edit, &$account, $category = NULL) {
 
 //       drupal_set_message('<pre>'. print_r($account->user_interests, 1) .'</pre>');
       if (is_array($account->user_interests)) {
-        foreach($account->user_interests as $vid => $interests) {
+        foreach ($account->user_interests as $vid => $interests) {
           $terms = array();
-          foreach($interests as $interest) {
+          foreach ($interests as $interest) {
             $terms[] = l($interest->name, 'taxonomy/term/'. $interest->tid) .' ('. ($interest->posts ? $interest->posts : 0) .' Posts, '. ($interest->comments ? $interest->comments : 0) .' Comments)';
           }
 
@@ -66,7 +66,7 @@ function user_interests_block($op = 'list', $delta = 0, $edit = array()) {
   else if ($op == 'save' && $delta == 0) {
   }
   else if ($op == 'view') {
-    switch($delta) {
+    switch ($delta) {
       case 0:
         $block = array(
           'subject' => t('Who wrote on this topic'),
@@ -101,7 +101,7 @@ function user_interests_block_1() {
     if (is_numeric(arg(2))) {
       $uids = user_interests_nodes_get_users(arg(2));
       if (is_array($uids)) {
-        foreach($uids as $key => $uid) {
+        foreach ($uids as $key => $uid) {
           $users[] = user_load(array('uid' => $uid->uid));
         }
       }
@@ -116,7 +116,7 @@ function user_interests_block_2() {
     if (is_numeric(arg(2))) {
       $uids = user_interests_comments_get_users(arg(2));
       if (is_array($uids)) {
-        foreach($uids as $key => $uid) {
+        foreach ($uids as $key => $uid) {
           $users[] = user_load(array('uid' => $uid->uid));
         }
       }
@@ -131,7 +131,7 @@ function user_interests_block_3() {
     if (is_numeric(arg(2))) {
       $uids = user_interests_comments_get_users(arg(2));
       if (is_array($uids)) {
-        foreach($uids as $key => $uid) {
+        foreach ($uids as $key => $uid) {
           $users[] = user_load(array('uid' => $uid->uid));
         }
       }
@@ -146,7 +146,7 @@ function user_interests_block_4() {
     if (is_numeric(arg(2))) {
       $uids = user_interests_comments_get_users(arg(2));
       if (is_array($uids)) {
-        foreach($uids as $key => $uid) {
+        foreach ($uids as $key => $uid) {
           $users[] = user_load(array('uid' => $uid->uid));
         }
       }
@@ -170,7 +170,7 @@ function user_interests_nodes_get_users($tid, $limit = 10) {
                           GROUP BY u.uid
                         LIMIT %d", $tid, $limit);
 
-  while($uid = db_fetch_object($result)) {
+  while ($uid = db_fetch_object($result)) {
     $uids[] = $uid;
   }
 //   drupal_set_message(dprint_r($users));//DEBUG
@@ -191,7 +191,7 @@ function user_interests_comments_get_users($tid, $limit = 10) {
                         GROUP BY u.uid
                         LIMIT %d", $tid, $limit);
 
-  while($uid = db_fetch_object($result)) {
+  while ($uid = db_fetch_object($result)) {
     $uids[] = $uid;
   }
 //   drupal_set_message(dprint_r($users));//DEBUG
@@ -240,7 +240,7 @@ function theme_user_interests($items = array(), $title = NULL, $type = 'ul', $at
   }
 
   if (!empty($items)) {
-    $output .= "<$type" . drupal_attributes($attributes) . '>';
+    $output .= "<$type". drupal_attributes($attributes) .'>';
     foreach ($items as $item) {
       $attributes = array();
       $children = array();
@@ -263,7 +263,7 @@ function theme_user_interests($items = array(), $title = NULL, $type = 'ul', $at
       if (count($children) > 0) {
         $data .= theme_item_list($children, NULL, $type, $attributes); // Render nested list
       }
-      $output .= '<li' . drupal_attributes($attributes) . '>'. $data .'</li>';
+      $output .= '<li'. drupal_attributes($attributes) .'>'. $data .'</li>';
     }
     $output .= "</$type>";
   }
