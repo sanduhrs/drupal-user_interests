@@ -17,8 +17,6 @@ function user_interests_user($op, &$edit, &$account, $category = NULL) {
 
   switch ($op) {
     case 'view':
-
-//       drupal_set_message('<pre>'. print_r($account->user_interests, 1) .'</pre>');
       if (is_array($account->user_interests)) {
         foreach ($account->user_interests as $vid => $interests) {
           $terms = array();
@@ -37,7 +35,36 @@ function user_interests_user($op, &$edit, &$account, $category = NULL) {
       return $items ? array(t('Interests') => $items) : NULL;
       break;
     case 'load':
-      $account->user_interests = user_interests_get_terms($account->uid, 5);
+      //cache id
+      $cid = 'user-interests-uid-'. $account->uid;
+      //get cached object
+      $cache = cache_get($cid);
+      
+      if (!empty($cache)) {
+        //attach cached object to the user object
+        $account->user_interests = unserialize($cache->data);
+      }
+      else {
+        //load interests
+        $account->user_interests = user_interests_get_terms($account->uid, 5);
+        //generate cache
+        cache_set($cid, 'cache', serialize($account->user_interests), CACHE_TEMPORARY);
+      }
+
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function user_interests_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'insert':
+    case 'update':
+      //clear cached interests
+      $cid = 'user-interests-uid-'. $node->uid;
+      cache_clear_all($cid, 'cache');
       break;
   }
 }
@@ -173,7 +200,7 @@ function user_interests_nodes_get_users($tid, $limit = 10) {
   while ($uid = db_fetch_object($result)) {
     $uids[] = $uid;
   }
-//   drupal_set_message(dprint_r($users));//DEBUG
+
   return $uids;
 }
 
@@ -183,6 +210,7 @@ function user_interests_nodes_get_users($tid, $limit = 10) {
  */
 function user_interests_comments_get_users($tid, $limit = 10) {
   $interests = array();
+  
   //get node taxonomy
   $result = db_query("SELECT u.uid, COUNT(tn.nid) as count FROM {users} u
                         INNER JOIN {comments} c ON u.uid=c.uid
@@ -194,7 +222,7 @@ function user_interests_comments_get_users($tid, $limit = 10) {
   while ($uid = db_fetch_object($result)) {
     $uids[] = $uid;
   }
-//   drupal_set_message(dprint_r($users));//DEBUG
+
   return $uids;
 }
 
@@ -203,6 +231,7 @@ function user_interests_comments_get_users($tid, $limit = 10) {
  */
 function user_interests_get_terms($uid, $limit = 10) {
   $interests = array();
+  
   //get node taxonomy
   $result = db_query("SELECT td.*, COUNT(td.tid) as posts FROM {term_data} td
                         INNER JOIN {term_node} tn ON td.tid=tn.tid
