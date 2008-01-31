@@ -10,11 +10,13 @@
  */
 
 /**
- * Implementation of hook_user();
+ * Implementation of hook_user().
  */
 function user_interests_user($op, &$edit, &$account, $category = NULL) {
   global $user;
-
+  //cache id
+  $cid = 'user-interests-uid-'. $account->uid;
+  
   switch ($op) {
     case 'view':
       if (is_array($account->user_interests)) {
@@ -35,8 +37,6 @@ function user_interests_user($op, &$edit, &$account, $category = NULL) {
       return $items ? array(t('Interests') => $items) : NULL;
       break;
     case 'load':
-      //cache id
-      $cid = 'user-interests-uid-'. $account->uid;
       //get cached object
       $cache = cache_get($cid);
       
@@ -50,7 +50,9 @@ function user_interests_user($op, &$edit, &$account, $category = NULL) {
         //generate cache
         cache_set($cid, 'cache', serialize($account->user_interests), CACHE_TEMPORARY);
       }
-
+      break;
+    case 'delete':
+      cache_clear_all($cid, 'cache');
       break;
   }
 }
