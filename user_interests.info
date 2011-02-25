@@ -1,4 +1,3 @@
-; $Id$
 name         = User Interests
 description  = "Shows a user's most used taxonomy terms on the profile page."
 ; dependencies = module1 module2 module3
